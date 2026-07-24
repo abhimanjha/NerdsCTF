@@ -48,6 +48,11 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms'))
 // Apply rate limiting globally
 app.use('/api', globalLimiter);
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'UP', timestamp: new Date().toISOString() });
+});
+
 // Register API Routes
 app.use('/api/v1', apiRouter);
 
