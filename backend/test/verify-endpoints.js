@@ -99,6 +99,53 @@ async function runTests() {
             }
         }
 
+        // Test 7: Retrieve Detailed User Profile
+        console.log('\n[TEST 7] Fetching detailed user profile...');
+        const profileRes = await axios.get(`${BASE_URL}/auth/profile`, {
+            headers: { Cookie: cookies }
+        });
+        if (profileRes.data.success && profileRes.data.profile) {
+            console.log(`✔ Detailed profile loaded for ${profileRes.data.profile.username} (Points: ${profileRes.data.profile.stats.totalPoints}).`);
+        } else {
+            throw new Error('Failed to fetch detailed profile.');
+        }
+
+        // Test 8: Update User Profile Metadata
+        console.log('\n[TEST 8] Updating profile metadata (country and avatar)...');
+        const updateRes = await axios.put(`${BASE_URL}/auth/profile`, {
+            country: 'Cyberland',
+            avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=test'
+        }, {
+            headers: { Cookie: cookies }
+        });
+        if (updateRes.data.success && updateRes.data.user.country === 'Cyberland') {
+            console.log('✔ Profile metadata updated successfully.');
+        } else {
+            throw new Error('Failed to update profile metadata.');
+        }
+
+        // Test 9: Fetch Platform User Statistics
+        console.log('\n[TEST 9] Fetching CTF platform stats...');
+        const statsRes = await axios.get(`${BASE_URL}/challenges/stats`, {
+            headers: { Cookie: cookies }
+        });
+        if (statsRes.data.success && statsRes.data.stats) {
+            console.log(`✔ Stats loaded: ${statsRes.data.stats.solvedChallenges}/${statsRes.data.stats.totalChallenges} challenges solved (${statsRes.data.stats.completionPercentage}%).`);
+        } else {
+            throw new Error('Failed to load user CTF stats.');
+        }
+
+        // Test 10: Fetch Single Challenge Details
+        console.log('\n[TEST 10] Fetching single challenge details by ID (ID: 1)...');
+        const detailRes = await axios.get(`${BASE_URL}/challenges/1`, {
+            headers: { Cookie: cookies }
+        });
+        if (detailRes.data.success && detailRes.data.challenge) {
+            console.log(`✔ Single challenge details loaded: "${detailRes.data.challenge.title}"`);
+        } else {
+            throw new Error('Failed to fetch challenge details.');
+        }
+
         console.log('\n--------------------------------------------------');
         console.log('     ALL INTEGRATION TESTS PASSED SUCCESSFULLY!    ');
         console.log('--------------------------------------------------');
