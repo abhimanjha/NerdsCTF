@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firmware Update Portal</title>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #cbd5e0;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-box {
+            background-color: #111827;
+            border: 1px solid #4f46e5;
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
+            border-radius: 8px;
+            padding: 40px;
+            width: 380px;
+            text-align: center;
+        }
+        h2 {
+            color: #818cf8;
+            margin-bottom: 25px;
+        }
+        input {
+            width: 90%;
+            padding: 10px;
+            margin-bottom: 20px;
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            color: white;
+            border-radius: 4px;
+            text-align: center;
+            font-family: inherit;
+        }
+        input:focus {
+            outline: none;
+            border-color: #818cf8;
+        }
+        button {
+            width: 96%;
+            padding: 10px;
+            background-color: #4f46e5;
+            border: none;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #4338ca;
+        }
+        .message {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .success {
+            color: #10b981;
+        }
+        .error {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2>Firmware Auth System</h2>
+        <p>Enter the master firmware bypass key to download the core system package.</p>
+        <input type="password" id="key" placeholder="Enter License / Access Key">
+        <button onclick="verifyKey()">Submit Key</button>
+        <div id="msg" class="message"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Profile Portal</title>
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #cbd5e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            width: 450px;
+            background: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            padding: 30px;
+            text-align: center;
+        }
+        h1 {
+            color: #38bdf8;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+        .profile-card {
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            background: #0f172a;
+            padding: 20px;
+            margin-top: 15px;
+            text-align: left;
+        }
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: block;
+            margin: 0 auto 15px auto;
+            border: 2px solid #38bdf8;
+            background: #1e293b;
+        }
+        .info-group {
+            margin-bottom: 12px;
+        }
+        .label {
+            font-size: 0.8rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+        .value {
+            font-size: 1rem;
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+        .secret-container {
+            background: #1e1b4b;
+            border: 1px dashed #6366f1;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        .secret-value {
+            font-family: 'Courier New', Courier, monospace;
+            color: #a5b4fc;
+            word-break: break-all;
+        }
+        .search-section {
+            margin-top: 25px;
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: white;
+        }
+        input:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+        button {
+            padding: 8px 16px;
+            background: #0284c7;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #0369a1;
+        }
+        .error-msg {
+            color: #f43f5e;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>NEXUS API Profile Explorer</h1>
+        <p style="font-size: 0.9rem; color: #64748b; margin-top: -10px;">Query user profiles directly from the internal API endpoints.</p>
+        
+        <div id="profile" class="profile-card">
+            <img id="profile-avatar" class="avatar" src="" alt="Avatar">
+            <div class="info-group">
+                <div class="label">Username</div>
+                <div id="profile-username" class="value">Loading...</div>
+            </div>
+            <div class="info-group">
+                <div class="label">Email</div>
+                <div id="profile-email" class="value">Loading...</div>
+            </div>
+            <div class="info-group">
+                <div class="label">Role</div>
+                <div id="profile-role" class="value">Loading...</div>
+            </div>
+            <div class="info-group">
+                <div class="label">Biography</div>
+                <div id="profile-bio" class="value">Loading...</div>
+            </div>
+            <div class="secret-container">
+                <div class="label" style="color: #c7d2fe;">System Secret Key (Flag)</div>
+                <div id="profile-flag" class="secret-value">Loading...</div>
+            </div>
+        </div>
+
+        <div class="search-section">
+            <input type="number" id="userIdInput" value="2" placeholder="User ID">
+            <button onclick="fetchProfile()">Load Profile</button>
+        </div>
+        <div id="error" class="error-msg"></div>
+    </div>
+
+    <script>
+        async function fetchProfile() {
+            const id = document.getElementById('userIdInput').value;
+            const errorDiv = document.getElementById('error');
+            errorDiv.innerText = '';
+            
+            try {
+                const response = await fetch(`/api/profile?id=${id}`);
+                if (!response.ok) {
+                    throw new Error(`Profile not found (Status: ${response.status})`);
+                }
+                const data = await response.json();
+                
+                document.getElementById('profile-avatar').src = data.avatar;
+                document.getElementById('profile-username').innerText = data.username;
+                document.getElementById('profile-email').innerText = data.email;
+                document.getElementById('profile-role').innerText = data.role;
+                document.getElementById('profile-bio').innerText = data.bio;
+                document.getElementById('profile-flag').innerText = data.secret_flag;
+            } catch (err) {
+                errorDiv.innerText = err.message;
+            }
+        }
+        
+        // Initial load for user 2 (current developer)
+        fetchProfile();
+    </script>
+</body>
+</html>

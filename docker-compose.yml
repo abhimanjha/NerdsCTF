@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: nerdctf-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: nerdctf
+      MYSQL_USER: ctfuser
+      MYSQL_PASSWORD: ctfpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - nerdctf-network
+
+  redis:
+    image: redis:alpine
+    container_name: nerdctf-cache
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - nerdctf-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nerdctf-backend
+    restart: always
+    environment:
+      - PORT=5000
+      - DATABASE_URL=mysql://ctfuser:ctfpassword@mysql:3306/nerdctf
+      - REDIS_URL=redis://redis:6379
+      - JWT_ACCESS_SECRET=access_token_super_secret_key_12345
+      - JWT_REFRESH_SECRET=refresh_token_super_secret_key_67890
+      - FRONTEND_URL=http://localhost:3000
+      - COOKIE_DOMAIN=localhost
+      - NODE_ENV=production
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - nerdctf-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nerdctf-frontend
+    restart: always
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - nerdctf-network
+
+  # Labs
+  lab1-cookie-monster:
+    build:
+      context: ./labs/lab1-cookie-monster
+      dockerfile: Dockerfile
+    container_name: lab1-cookie-monster
+    restart: always
+    ports:
+      - "8001:80"
+    networks:
+      - nerdctf-network
+
+  lab2-source-detective:
+    build:
+      context: ./labs/lab2-source-detective
+      dockerfile: Dockerfile
+    container_name: lab2-source-detective
+    restart: always
+    ports:
+      - "8002:80"
+    networks:
+      - nerdctf-network
+
+  lab3-hidden-header:
+    build:
+      context: ./labs/lab3-hidden-header
+      dockerfile: Dockerfile
+    container_name: lab3-hidden-header
+    restart: always
+    ports:
+      - "8003:80"
+    networks:
+      - nerdctf-network
+
+  lab4-encoded-secrets:
+    build:
+      context: ./labs/lab4-encoded-secrets
+      dockerfile: Dockerfile
+    container_name: lab4-encoded-secrets
+    restart: always
+    ports:
+      - "8004:80"
+    networks:
+      - nerdctf-network
+
+  lab5-broken-api:
+    build:
+      context: ./labs/lab5-broken-api
+      dockerfile: Dockerfile
+    container_name: lab5-broken-api
+    restart: always
+    ports:
+      - "8005:80"
+    networks:
+      - nerdctf-network
+
+volumes:
+  mysql-data:
+
+networks:
+  nerdctf-network:
+    driver: bridge

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source Detective Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>NEXUS Cyber Intelligence Platform</h1>
+            <p class="subtitle">Secure Node Monitor // Active Scanning Ready</p>
+        </header>
+        
+        <main class="dashboard-grid">
+            <div class="card status-card">
+                <h2>System Status</h2>
+                <div class="status-indicator">
+                    <span class="pulse-green"></span>
+                    <span>ONLINE / SECURED</span>
+                </div>
+                <p>All firewalls operating at optimal throughput. No anomalies detected in current cycle.</p>
+            </div>
+            
+            <div class="card intelligence-card">
+                <h2>Recent Intelligence Reports</h2>
+                <ul>
+                    <li><strong>[08:14 UTC]</strong> Suspicious port sweep detected from IP 198.51.100.42. Action: Blocked.</li>
+                    <li><strong>[09:30 UTC]</strong> Automated vulnerability scanning completed for server-09. 0 issues found.</li>
+                    <li><strong>[11:05 UTC]</strong> Updated platform certificates.</li>
+                </ul>
+            </div>
+        </main>
+
+        <!-- Clue Part 1 of 3: nerdCTF{s0urc3_ -->
+        <footer>
+            <p>&copy; 2026 NEXUS Intelligence Services. All rights reserved.</p>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
