@@ -307,4 +307,182 @@ export class AuthController {
             return res.status(500).json({ success: false, error: 'Error fetching user profile.' });
         }
     }
+
+    static async getProfile(req: AuthenticatedRequest, res: Response) {
+        if (!req.user) {
+            return res.status(401).json({ success: false, error: 'Unauthenticated.' });
+        }
+
+        try {
+            const user = await prisma.user.findUnique({
+                where: { id: req.user.userId },
+                include: {
+                    role: true,
+                    badges: {
+                        include: { badge: true }
+                    },
+                    submissions: {
+                        where: { isCorrect: true },
+                        include: { challenge: { select: { id: true, title: true, points: true, category: true } } },
+                        orderBy: { submittedAt: 'desc' }
+                    }
+                }
+            });
+
+            if (!user) {
+                return res.status(404).json({ success: false, error: 'User profile not found.' });
+            }
+
+            const totalPoints = user.submissions.reduce((sum, s) => sum + s.challenge.points, 0);
+            const solvedCount = user.submissions.length;
+
+            const recentLogs = await prisma.auditLog.findMany({
+                where: { userId: user.id },
+                orderBy: { createdAt: 'desc' },
+                take: 10
+            });
+
+            return res.json({
+                success: true,
+                profile: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    avatar: user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`,
+                    country: user.country || 'N/A',
+                    role: user.role.name,
+                    createdAt: user.createdAt,
+                    stats: {
+                        totalPoints,
+                        solvedCount
+                    },
+                    badges: user.badges.map(ub => ({
+                        id: ub.badge.id,
+                        name: ub.badge.name,
+                        description: ub.badge.description,
+                        iconUrl: ub.badge.iconUrl,
+                        earnedAt: ub.earnedAt
+                    })),
+                    recentSolves: user.submissions.map(s => ({
+                        challengeId: s.challenge.id,
+                        title: s.challenge.title,
+                        points: s.challenge.points,
+                        category: s.challenge.category.name,
+                        submittedAt: s.submittedAt
+                    })),
+                    recentActivity: recentLogs.map(l => ({
+                        action: l.action,
+                        details: l.details,
+                        timestamp: l.createdAt
+                    }))
+                }
+            });
+        } catch (error: any) {
+            Logger.error('Failed to load full profile', error.stack, 'AuthController');
+            return res.status(500).json({ success: false, error: 'Error fetching detailed user profile.' });
+        }
+    }
+
+    static async updateProfile(req: AuthenticatedRequest, res: Response) {
+        if (!req.user) {
+            return res.status(401).json({ success: false, error: 'Unauthenticated.' });
+        }
+
+        const { country, avatar } = req.body;
+
+        try {
+            const updatedUser = await prisma.user.update({
+                where: { id: req.user.userId },
+                data: {
+                    ...(country !== undefined && { country: String(country).trim() }),
+                    ...(avatar !== undefined && { avatar: String(avatar).trim() })
+                },
+                select: {
+                    id: true,
+                    username: true,
+                    email: true,
+                    country: true,
+                    avatar: true
+                }
+            });
+
+            await prisma.auditLog.create({
+                data: {
+                    userId: req.user.userId,
+                    action: 'UPDATE_PROFILE',
+                    details: 'User updated profile information (country/avatar).',
+                    ipAddress: req.ip
+                }
+            });
+
+            return res.json({
+                success: true,
+                message: 'Profile updated successfully.',
+                user: updatedUser
+            });
+        } catch (error: any) {
+            Logger.error('Profile update failed', error.stack, 'AuthController');
+            return res.status(500).json({ success: false, error: 'Failed to update profile.' });
+        }
+    }
+
+    static async changePassword(req: AuthenticatedRequest, res: Response) {
+        if (!req.user) {
+            return res.status(401).json({ success: false, error: 'Unauthenticated.' });
+        }
+
+        const { currentPassword, newPassword } = req.body;
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ success: false, error: 'Current password and new password are required.' });
+        }
+
+        try {
+            const user = await userRepo.findById(req.user.userId);
+            if (!user) {
+                return res.status(404).json({ success: false, error: 'User context not found.' });
+            }
+
+            const isMatch = await HashService.verify(user.passwordHash, currentPassword);
+            if (!isMatch) {
+                return res.status(401).json({ success: false, error: 'Current password is incorrect.' });
+            }
+
+            const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$&*])(?=.*[0-9])(?=.*[a-z]).{8,}$/;
+            if (!passwordRegex.test(newPassword)) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'New password must be at least 8 characters long, contain at least one uppercase letter, one number, and one special character.'
+                });
+            }
+
+            const newPasswordHash = await HashService.hash(newPassword);
+            await prisma.user.update({
+                where: { id: req.user.userId },
+                data: { passwordHash: newPasswordHash }
+            });
+
+            // Revoke active refresh tokens
+            await prisma.refreshToken.updateMany({
+                where: { userId: req.user.userId },
+                data: { isRevoked: true }
+            });
+
+            await prisma.auditLog.create({
+                data: {
+                    userId: req.user.userId,
+                    action: 'CHANGE_PASSWORD',
+                    details: 'User successfully changed account password.',
+                    ipAddress: req.ip
+                }
+            });
+
+            return res.json({
+                success: true,
+                message: 'Password changed successfully. Please log in again with your new credentials.'
+            });
+        } catch (error: any) {
+            Logger.error('Change password failed', error.stack, 'AuthController');
+            return res.status(500).json({ success: false, error: 'Failed to update password.' });
+        }
+    }
 }

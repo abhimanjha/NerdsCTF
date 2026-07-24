@@ -70,6 +70,75 @@ All API endpoints are prefixed with `/api/v1`. Requests must include cookie sess
   }
   ```
 
+### Get Detailed Profile & Activity
+- **Route**: `GET /auth/profile`
+- **Authentication**: Required
+- **Response (200 OK)**:
+  ```json
+  {
+      "success": true,
+      "profile": {
+          "id": 14,
+          "username": "net_hunter",
+          "email": "user@example.com",
+          "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=net_hunter",
+          "country": "India",
+          "role": "USER",
+          "createdAt": "2026-07-23T22:00:00.000Z",
+          "stats": {
+              "totalPoints": 450,
+              "solvedCount": 3
+          },
+          "badges": [],
+          "recentSolves": [],
+          "recentActivity": []
+      }
+  }
+  ```
+
+### Put Update Profile
+- **Route**: `PUT /auth/profile`
+- **Authentication**: Required
+- **Request Body**:
+  ```json
+  {
+      "country": "India",
+      "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=custom"
+  }
+  ```
+- **Response (200 OK)**:
+  ```json
+  {
+      "success": true,
+      "message": "Profile updated successfully.",
+      "user": {
+          "id": 14,
+          "username": "net_hunter",
+          "email": "user@example.com",
+          "country": "India",
+          "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=custom"
+      }
+  }
+  ```
+
+### Post Change Password
+- **Route**: `POST /auth/change-password`
+- **Authentication**: Required
+- **Request Body**:
+  ```json
+  {
+      "currentPassword": "Password123!",
+      "newPassword": "NewSecurePassword456!"
+  }
+  ```
+- **Response (200 OK)**:
+  ```json
+  {
+      "success": true,
+      "message": "Password changed successfully. Please log in again with your new credentials."
+  }
+  ```
+
 ### Post Token Refresh
 - **Route**: `POST /auth/refresh`
 - **Authentication**: Required (cookie `refreshToken`)

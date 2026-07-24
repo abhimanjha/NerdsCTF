@@ -173,4 +173,114 @@ export class ChallengeController {
             return res.status(500).json({ success: false, error: 'Verification pipeline error.' });
         }
     }
+
+    static async getChallengeById(req: AuthenticatedRequest, res: Response) {
+        const { id } = req.params;
+        if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+        try {
+            const challengeId = Number(id);
+            if (isNaN(challengeId)) {
+                return res.status(400).json({ success: false, error: 'Invalid challenge ID parameter.' });
+            }
+
+            const challenge = await prisma.challenge.findUnique({
+                where: { id: challengeId, isActive: true },
+                include: {
+                    category: true,
+                    hints: { select: { id: true, costPoints: true } }
+                }
+            });
+
+            if (!challenge) {
+                return res.status(404).json({ success: false, error: 'Challenge not found or inactive.' });
+            }
+
+            const solved = await challengeRepo.hasSolved(req.user.userId, challengeId);
+
+            // User attempts history for this challenge
+            const attemptsCount = await prisma.submission.count({
+                where: { userId: req.user.userId, challengeId }
+            });
+
+            return res.json({
+                success: true,
+                challenge: {
+                    id: challenge.id,
+                    title: challenge.title,
+                    difficulty: challenge.difficulty,
+                    description: challenge.description,
+                    objectives: challenge.objectives,
+                    category: challenge.category.name,
+                    points: challenge.points,
+                    tags: challenge.tags.split(','),
+                    estimatedTime: challenge.estimatedTime,
+                    solved,
+                    dockerImage: challenge.dockerImage,
+                    sourceCodeUrl: challenge.sourceCodeUrl,
+                    hints: challenge.hints,
+                    userAttemptsCount: attemptsCount
+                }
+            });
+        } catch (error: any) {
+            Logger.error('Get challenge by ID error', error.stack, 'ChallengeController');
+            return res.status(500).json({ success: false, error: 'Failed to retrieve challenge details.' });
+        }
+    }
+
+    static async getStats(req: AuthenticatedRequest, res: Response) {
+        if (!req.user) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+        try {
+            const totalActive = await prisma.challenge.count({ where: { isActive: true } });
+            const userSolvedCount = await challengeRepo.countUserSolved(req.user.userId);
+            const userPoints = await challengeRepo.getUserPoints(req.user.userId);
+
+            const totalAvailablePointsAgg = await prisma.challenge.aggregate({
+                where: { isActive: true },
+                _sum: { points: true }
+            });
+            const totalAvailablePoints = totalAvailablePointsAgg._sum.points || 0;
+
+            const categoryBreakdown = await prisma.category.findMany({
+                include: {
+                    challenges: {
+                        where: { isActive: true },
+                        select: { id: true, points: true }
+                    }
+                }
+            });
+
+            const userSolves = await prisma.submission.findMany({
+                where: { userId: req.user.userId, isCorrect: true },
+                select: { challengeId: true }
+            });
+            const solvedIds = new Set(userSolves.map(s => s.challengeId));
+
+            const categories = categoryBreakdown.map(cat => {
+                const totalInCat = cat.challenges.length;
+                const solvedInCat = cat.challenges.filter(c => solvedIds.has(c.id)).length;
+                return {
+                    name: cat.name,
+                    totalChallenges: totalInCat,
+                    solvedChallenges: solvedInCat
+                };
+            });
+
+            return res.json({
+                success: true,
+                stats: {
+                    totalChallenges: totalActive,
+                    solvedChallenges: userSolvedCount,
+                    userPoints,
+                    totalAvailablePoints,
+                    completionPercentage: totalActive > 0 ? Math.round((userSolvedCount / totalActive) * 100) : 0,
+                    categories
+                }
+            });
+        } catch (error: any) {
+            Logger.error('Get stats error', error.stack, 'ChallengeController');
+            return res.status(500).json({ success: false, error: 'Failed to calculate platform stats.' });
+        }
+    }
 }
